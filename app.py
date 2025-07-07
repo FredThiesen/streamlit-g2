@@ -7,14 +7,14 @@ import importlib.util
 import sys
 import os
 
-# --- Importa o script de tratamento de dados como módulo ---
-TRATAMENTO_PATH = os.path.join(os.path.dirname(__file__), 'trata-dados-e-cria-graficos.py')
-spec = importlib.util.spec_from_file_location("trata_dados", TRATAMENTO_PATH)
-trata_dados = importlib.util.module_from_spec(spec)
-sys.modules["trata_dados"] = trata_dados
-spec.loader.exec_module(trata_dados)
-
-df = trata_dados.df  # DataFrame já tratado
+# --- Animação de carregamento ao importar e preparar os dados tratados ---
+with st.spinner('Carregando dados e preparando visualização...'):
+    TRATAMENTO_PATH = os.path.join(os.path.dirname(__file__), 'trata-dados-e-cria-graficos.py')
+    spec = importlib.util.spec_from_file_location("trata_dados", TRATAMENTO_PATH)
+    trata_dados = importlib.util.module_from_spec(spec)
+    sys.modules["trata_dados"] = trata_dados
+    spec.loader.exec_module(trata_dados)
+    df = trata_dados.df  # DataFrame já tratado
 
 # --- Configuração da página ---
 st.set_page_config(
@@ -34,7 +34,7 @@ tab_labels = [
 ]
 tabs = st.tabs(tab_labels)
 
-# --- Filtros continuam na sidebar ---
+# --- Filtros continuam na sidebar, agora com tooltips (help) explicativos ---
 st.sidebar.title("Filtros")
 sexos = df['Sexo'].dropna().unique().tolist()
 especialidades = df['Especialidade'].dropna().unique().tolist()
@@ -43,12 +43,28 @@ min_idade, max_idade = int(df['Idade'].min()), int(df['Idade'].max())
 min_ano = df['Data/Hora_ Consulta Ambulatorial'].dt.year.min()
 max_ano = df['Data/Hora_ Consulta Ambulatorial'].dt.year.max()
 
-sexo_sel = st.sidebar.multiselect("Sexo", options=sexos, default=sexos)
-esp_sel = st.sidebar.multiselect("Especialidade", options=especialidades, default=especialidades)
-mun_sel = st.sidebar.multiselect("Município", options=municipios, default=municipios)
-idade_sel = st.sidebar.slider("Faixa Etária", min_value=min_idade, max_value=max_idade, value=(min_idade, max_idade))
+# Filtros com help
+sexo_sel = st.sidebar.multiselect(
+    "Sexo", options=sexos, default=sexos,
+    help="Filtra os atendimentos pelo sexo do paciente."
+)
+esp_sel = st.sidebar.multiselect(
+    "Especialidade", options=especialidades, default=especialidades,
+    help="Filtra os atendimentos pela especialidade médica."
+)
+mun_sel = st.sidebar.multiselect(
+    "Município", options=municipios, default=municipios,
+    help="Filtra os atendimentos pelo município de residência do paciente."
+)
+idade_sel = st.sidebar.slider(
+    "Faixa Etária", min_value=min_idade, max_value=max_idade, value=(min_idade, max_idade),
+    help="Filtra os atendimentos pela idade dos pacientes."
+)
 meses = df['Mes'].sort_values().unique().tolist()
-mes_sel = st.sidebar.multiselect("Mês da Consulta", options=meses, default=meses)
+mes_sel = st.sidebar.multiselect(
+    "Mês da Consulta", options=meses, default=meses,
+    help="Filtra os atendimentos pelo mês de realização da consulta."
+)
 
 # --- Aplica filtros ---
 df_filt = df[
@@ -73,11 +89,31 @@ with tabs[0]:
     - Passe o mouse sobre os gráficos interativos para detalhes.
     """)
     st.info("Os dados exibidos já foram tratados e organizados previamente.")
+
+    # --- Cards de Métricas de Destaque (KPIs) ---
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total de Atendimentos", int(df_filt.shape[0]))
+    with col2:
+        st.metric("Municípios Distintos", int(df_filt['Município'].nunique()))
+    with col3:
+        st.metric("Especialidades Distintas", int(df_filt['Especialidade'].nunique()))
+    with col4:
+        idade_media = df_filt['Idade'].mean()
+        st.metric("Idade Média dos Pacientes", f"{idade_media:.1f}")
+
     st.subheader("Distribuição de Pacientes por Sexo")
-    fig, ax = plt.subplots(figsize=(6, 4))
-    sns.countplot(data=df_filt, x='Sexo', palette='pastel', ax=ax)
-    ax.set_title('Distribuição de Pacientes por Sexo')
-    st.pyplot(fig)
+    # Pie chart (gráfico de pizza) usando Plotly Express
+    sexo_counts = df_filt['Sexo'].value_counts()
+    fig_pie = px.pie(
+        names=sexo_counts.index,
+        values=sexo_counts.values,
+        color=sexo_counts.index,
+        color_discrete_map={"FEMININO": "pink", "MASCULINO": "skyblue"},
+        title="Distribuição de Pacientes por Sexo"
+    )
+    fig_pie.update_traces(textinfo='percent+label')
+    st.plotly_chart(fig_pie, use_container_width=True)
 
 with tabs[1]:
     # --- Análises por Sexo ---
