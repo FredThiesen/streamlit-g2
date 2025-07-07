@@ -180,8 +180,16 @@ with tabs[3]:
         'Saturday': 'Sábado',
         'Sunday': 'Domingo'
     }
-    # Renomeia as colunas do heatmap para português
+    # Renomeia as colunas do heatmap para português e ordena
+    ordem_dias_pt = [
+        'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira'
+    ]
     pivot_top10.columns = [dias_semana_pt.get(col, col) for col in pivot_top10.columns]
+    # Ordena as colunas conforme a ordem dos dias em português
+    pivot_top10 = pivot_top10.reindex(columns=ordem_dias_pt)
+    # Garante que os dados do heatmap são inteiros para evitar erro com fmt='d'
+    # Preenche valores ausentes com 0 antes de converter para int
+    pivot_top10 = pivot_top10.fillna(0).astype(int)
     fig, ax = plt.subplots(figsize=(8, 8))
     sns.heatmap(pivot_top10, cmap='YlGnBu', annot=True, fmt='d', annot_kws={"size": 7}, cbar_kws={'shrink': 0.6}, ax=ax)
     ax.set_title('Volume de Atendimentos por Especialidade e Dia da Semana')
