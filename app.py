@@ -43,28 +43,40 @@ min_idade, max_idade = int(df['Idade'].min()), int(df['Idade'].max())
 min_ano = df['Data/Hora_ Consulta Ambulatorial'].dt.year.min()
 max_ano = df['Data/Hora_ Consulta Ambulatorial'].dt.year.max()
 
-# Filtros com help
-sexo_sel = st.sidebar.multiselect(
-    "Sexo", options=sexos, default=sexos,
-    help="Filtra os atendimentos pelo sexo do paciente."
-)
-esp_sel = st.sidebar.multiselect(
-    "Especialidade", options=especialidades, default=especialidades,
-    help="Filtra os atendimentos pela especialidade médica."
-)
-mun_sel = st.sidebar.multiselect(
-    "Município", options=municipios, default=municipios,
-    help="Filtra os atendimentos pelo município de residência do paciente."
-)
-idade_sel = st.sidebar.slider(
-    "Faixa Etária", min_value=min_idade, max_value=max_idade, value=(min_idade, max_idade),
-    help="Filtra os atendimentos pela idade dos pacientes."
-)
-meses = df['Mes'].sort_values().unique().tolist()
-mes_sel = st.sidebar.multiselect(
-    "Mês da Consulta", options=meses, default=meses,
-    help="Filtra os atendimentos pelo mês de realização da consulta."
-)
+# --- Lista fixa dos meses em português para ordenação ---
+MESES_PT = [
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+]
+
+# --- Filtros organizados em um expander na sidebar, com componentes mais amigáveis ---
+with st.sidebar.expander("Filtros Avançados", expanded=True):
+    sexo_sel = st.multiselect(
+        "Sexo", options=sexos, default=sexos,
+        help="Filtra os atendimentos pelo sexo do paciente.",
+        placeholder="Selecione um ou mais sexos"
+    )
+    esp_sel = st.multiselect(
+        "Especialidade", options=especialidades, default=especialidades,
+        help="Filtra os atendimentos pela especialidade médica.",
+        placeholder="Selecione especialidades"
+    )
+    # Município como selectbox para seleção única
+    municipio_sel = st.selectbox(
+        "Município", options=["Todos"] + municipios,
+        help="Filtra os atendimentos por município. Selecione 'Todos' para não filtrar."
+    )
+    mun_sel = municipios if municipio_sel == "Todos" else [municipio_sel]
+    idade_sel = st.slider(
+        "Faixa Etária", min_value=min_idade, max_value=max_idade, value=(min_idade, max_idade),
+        help="Filtra os atendimentos pela idade dos pacientes."
+    )
+    meses = [m for m in MESES_PT if m in df['Mes'].unique()]
+    mes_sel = st.multiselect(
+        "Mês da Consulta", options=meses, default=meses,
+        help="Filtra os atendimentos pelo mês de realização da consulta.",
+        placeholder="Selecione meses"
+    )
 
 # --- Aplica filtros ---
 df_filt = df[
@@ -178,6 +190,7 @@ with tabs[5]:
     fig_semana = px.line(x=consultas_por_data.index, y=consultas_por_data.values, markers=True, labels={'x':'Dia da Semana','y':'Número de Atendimentos'}, title='Tendência de Atendimentos na Semana')
     st.plotly_chart(fig_semana, use_container_width=True)
     st.subheader("Tendência de Atendimentos por Mês")
-    consultas_por_mes = df_filt['Mes'].value_counts().sort_index()
+    # Ordena os meses conforme a lista fixa
+    consultas_por_mes = df_filt['Mes'].value_counts().reindex(MESES_PT, fill_value=0)
     fig_mes = px.line(x=consultas_por_mes.index, y=consultas_por_mes.values, markers=True, labels={'x':'Mês','y':'Consultas'}, title='Tendência de Atendimentos por Mês')
     st.plotly_chart(fig_mes, use_container_width=True)
