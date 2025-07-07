@@ -156,16 +156,38 @@ with tabs[3]:
     st.header("Especialidades")
     st.subheader("Distribuição de Especialidades por Sexo (Top 5)")
     top_especialidades = df_filt['Especialidade'].value_counts().head(5).index
-    fig_esp = px.histogram(df_filt[df_filt['Especialidade'].isin(top_especialidades)], x='Especialidade', color='Sexo', barmode='group', title='Especialidades por Sexo (Top 5)')
+    fig_esp = px.histogram(
+        df_filt[df_filt['Especialidade'].isin(top_especialidades)],
+        x='Especialidade',
+        color='Sexo',
+        barmode='group',
+        title='Especialidades por Sexo (Top 5)',
+    )
+    fig_esp.update_yaxes(title_text='Atendimentos')
     st.plotly_chart(fig_esp, use_container_width=True)
     st.subheader("Heatmap: Atendimentos por Especialidade e Dia da Semana (Top 10)")
     top10_esp = df_filt['Especialidade'].value_counts().head(10).index
     pivot_top10 = df_filt[df_filt['Especialidade'].isin(top10_esp)].pivot_table(
         index='Especialidade', columns='Dia_Semana', aggfunc='size', fill_value=0
     )
+    # --- Dicionário para traduzir dias da semana para português ---
+    dias_semana_pt = {
+        'Monday': 'Segunda-feira',
+        'Tuesday': 'Terça-feira',
+        'Wednesday': 'Quarta-feira',
+        'Thursday': 'Quinta-feira',
+        'Friday': 'Sexta-feira',
+        'Saturday': 'Sábado',
+        'Sunday': 'Domingo'
+    }
+    # Renomeia as colunas do heatmap para português
+    pivot_top10.columns = [dias_semana_pt.get(col, col) for col in pivot_top10.columns]
     fig, ax = plt.subplots(figsize=(8, 8))
     sns.heatmap(pivot_top10, cmap='YlGnBu', annot=True, fmt='d', annot_kws={"size": 7}, cbar_kws={'shrink': 0.6}, ax=ax)
     ax.set_title('Volume de Atendimentos por Especialidade e Dia da Semana')
+    ax.set_xlabel('Dia da Semana')
+    ax.set_ylabel('Especialidade')
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
     st.pyplot(fig)
 
 with tabs[4]:
@@ -186,8 +208,20 @@ with tabs[5]:
     # --- Tendências Temporais ---
     st.header("Tendências Temporais")
     st.subheader("Tendência de Atendimentos na Semana")
-    consultas_por_data = df_filt.groupby('Dia_Semana').size().reindex(['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'], fill_value=0)
-    fig_semana = px.line(x=consultas_por_data.index, y=consultas_por_data.values, markers=True, labels={'x':'Dia da Semana','y':'Número de Atendimentos'}, title='Tendência de Atendimentos na Semana')
+    consultas_por_data = df_filt.groupby('Dia_Semana').size().reindex(
+        ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'], fill_value=0)
+    # Traduz os dias da semana para português
+    dias_semana_pt = {
+        'Monday': 'Segunda-feira',
+        'Tuesday': 'Terça-feira',
+        'Wednesday': 'Quarta-feira',
+        'Thursday': 'Quinta-feira',
+        'Friday': 'Sexta-feira',
+        'Saturday': 'Sábado',
+        'Sunday': 'Domingo'
+    }
+    idx_pt = [dias_semana_pt.get(dia, dia) for dia in consultas_por_data.index]
+    fig_semana = px.line(x=idx_pt, y=consultas_por_data.values, markers=True, labels={'x':'Dia da Semana','y':'Número de Atendimentos'}, title='Tendência de Atendimentos na Semana')
     st.plotly_chart(fig_semana, use_container_width=True)
     st.subheader("Tendência de Atendimentos por Mês")
     # Ordena os meses conforme a lista fixa
