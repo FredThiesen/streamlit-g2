@@ -43,6 +43,21 @@ df['Data/Hora_ Consulta Ambulatorial'] = pd.to_datetime(df['Data/Hora_ Consulta 
 df['Mes'] = df['Data/Hora_ Consulta Ambulatorial'].dt.month
 df['Dia_Semana'] = df['Data/Hora_ Consulta Ambulatorial'].dt.day_name()
 
+# --- FILTRO DE SEXO: Mantém apenas FEMININO ou MASCULINO (remove nulos, vazios, indefinidos, etc) ---
+df = df[df['Sexo'].isin(['FEMININO', 'MASCULINO'])].copy()
+
+# --- REMOVE REGISTROS COM IDADE MAIOR QUE 100 ANOS ---
+df = df[df['Idade'] <= 100].copy()
+
+# --- CRIA COLUNA 'Mes' COM NOMES DOS MESES EM PORTUGUÊS ---
+# Dicionário para traduzir nomes dos meses para português
+meses_pt = {
+    'January': 'Janeiro', 'February': 'Fevereiro', 'March': 'Março', 'April': 'Abril',
+    'May': 'Maio', 'June': 'Junho', 'July': 'Julho', 'August': 'Agosto',
+    'September': 'Setembro', 'October': 'Outubro', 'November': 'Novembro', 'December': 'Dezembro'
+}
+df['Mes'] = df['Data/Hora_ Consulta Ambulatorial'].dt.strftime('%B').map(meses_pt)
+
 """GRAFICOS"""
 
 # DISTRIBUICAO DE PACIENTES POR SEXO

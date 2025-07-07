@@ -23,7 +23,18 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- Sidebar: Filtros ---
+# --- NAVEGAÇÃO POR ABAS NO TOPO (st.tabs) ---
+tab_labels = [
+    "Página Inicial",
+    "Análises por Sexo",
+    "Análises por Idade",
+    "Especialidades",
+    "Municípios",
+    "Tendências Temporais"
+]
+tabs = st.tabs(tab_labels)
+
+# --- Filtros continuam na sidebar ---
 st.sidebar.title("Filtros")
 sexos = df['Sexo'].dropna().unique().tolist()
 especialidades = df['Especialidade'].dropna().unique().tolist()
@@ -48,26 +59,16 @@ df_filt = df[
     df['Mes'].isin(mes_sel)
 ]
 
-# --- Páginas ---
-paginas = [
-    "Página Inicial",
-    "Análises por Sexo",
-    "Análises por Idade",
-    "Especialidades",
-    "Municípios",
-    "Tendências Temporais"
-]
-pagina = st.sidebar.radio("Navegue pelas páginas:", paginas)
-
-# --- Página Inicial ---
-if pagina == "Página Inicial":
+# --- Renderiza cada página na respectiva aba ---
+with tabs[0]:
+    # --- Página Inicial ---
     st.title("Dashboard de Consultas Ambulatoriais 2023")
     st.markdown("""
     ### Objetivo
     Este dashboard interativo permite explorar e analisar os atendimentos ambulatoriais realizados em 2023. Utilize os filtros na barra lateral para refinar os dados e navegue pelas páginas para diferentes perspectivas.
 
     **Como navegar:**
-    - Use o menu lateral para acessar diferentes análises.
+    - Use as abas no topo para acessar diferentes análises.
     - Os filtros afetam todos os gráficos e tabelas.
     - Passe o mouse sobre os gráficos interativos para detalhes.
     """)
@@ -78,8 +79,8 @@ if pagina == "Página Inicial":
     ax.set_title('Distribuição de Pacientes por Sexo')
     st.pyplot(fig)
 
-# --- Análises por Sexo ---
-elif pagina == "Análises por Sexo":
+with tabs[1]:
+    # --- Análises por Sexo ---
     st.header("Análises por Sexo")
     col1, col2 = st.columns(2)
     with col1:
@@ -91,8 +92,8 @@ elif pagina == "Análises por Sexo":
         fig_masc = px.histogram(df_filt[df_filt['Sexo'] == 'MASCULINO'], x='Idade', nbins=30, title='Idade dos Pacientes (Masculino)', color_discrete_sequence=['skyblue'])
         st.plotly_chart(fig_masc, use_container_width=True)
 
-# --- Análises por Idade ---
-elif pagina == "Análises por Idade":
+with tabs[2]:
+    # --- Análises por Idade ---
     st.header("Análises por Idade")
     st.subheader("Distribuição Geral de Atendimentos por Idade")
     fig_idade = px.histogram(df_filt, x='Idade', nbins=30, title='Distribuição Geral de Atendimentos por Idade', color_discrete_sequence=['mediumseagreen'])
@@ -102,8 +103,8 @@ elif pagina == "Análises por Idade":
     fig_box = px.box(df_filt[df_filt['Especialidade'].isin(top_especialidades)], x='Especialidade', y='Idade', points='all', color='Especialidade', title='Idade por Especialidade (Top 5)')
     st.plotly_chart(fig_box, use_container_width=True)
 
-# --- Especialidades ---
-elif pagina == "Especialidades":
+with tabs[3]:
+    # --- Especialidades ---
     st.header("Especialidades")
     st.subheader("Distribuição de Especialidades por Sexo (Top 5)")
     top_especialidades = df_filt['Especialidade'].value_counts().head(5).index
@@ -119,8 +120,8 @@ elif pagina == "Especialidades":
     ax.set_title('Volume de Atendimentos por Especialidade e Dia da Semana')
     st.pyplot(fig)
 
-# --- Municípios ---
-elif pagina == "Municípios":
+with tabs[4]:
+    # --- Municípios ---
     st.header("Municípios")
     st.subheader("Top 10 Municípios com Mais Atendimentos")
     df_mun = df_filt[df_filt['Município'] != 'Não informado']
@@ -133,8 +134,8 @@ elif pagina == "Municípios":
     fig_idade_mun = px.bar(x=idade_media.index, y=idade_media.values, labels={'x':'Município','y':'Idade Média'}, color=idade_media.values, color_continuous_scale='Purples', title='Idade Média por Município (Top 5)')
     st.plotly_chart(fig_idade_mun, use_container_width=True)
 
-# --- Tendências Temporais ---
-elif pagina == "Tendências Temporais":
+with tabs[5]:
+    # --- Tendências Temporais ---
     st.header("Tendências Temporais")
     st.subheader("Tendência de Atendimentos na Semana")
     consultas_por_data = df_filt.groupby('Dia_Semana').size().reindex(['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'], fill_value=0)
