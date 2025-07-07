@@ -37,7 +37,7 @@ tabs = st.tabs(tab_labels)
 # --- Filtros continuam na sidebar, agora com tooltips (help) explicativos ---
 st.sidebar.title("Filtros")
 sexos = df['Sexo'].dropna().unique().tolist()
-especialidades = df['Especialidade'].dropna().unique().tolist()
+especialidades = df['Especialidade'].value_counts().index.tolist()
 municipios = df['Município'].dropna().unique().tolist()
 min_idade, max_idade = int(df['Idade'].min()), int(df['Idade'].max())
 min_ano = df['Data/Hora_ Consulta Ambulatorial'].dt.year.min()
